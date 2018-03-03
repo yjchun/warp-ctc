@@ -27,8 +27,10 @@ if(NOT WITH_OMP)
     add_definitions(-DCTC_DISABLE_OMP)
 endif()
 if (WITH_OMP)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcompiler -fopenmp")
+    IF (NOT APPLE)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+        set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcompiler -fopenmp")
+    endif()
 endif()
 
 # need to be at least 30 or __shfl_down in reduce wont compile

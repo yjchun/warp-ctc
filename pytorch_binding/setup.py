@@ -6,7 +6,7 @@ from distutils.core import setup
 
 from torch.utils.ffi import create_extension
 
-extra_compile_args = ['-std=c++11', '-fPIC']
+extra_compile_args = ['-fPIC']
 warp_ctc_path = "../build"
 
 if "CUDA_HOME" not in os.environ:

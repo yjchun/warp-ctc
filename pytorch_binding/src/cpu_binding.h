@@ -3,5 +3,5 @@ int cpu_ctc(THFloatTensor *probs,
                         THIntTensor *labels_ptr,
                         THIntTensor *label_sizes_ptr,
                         THIntTensor *sizes,
-                        int minibatch_size,
+                        int blank_label,
                         THFloatTensor *costs);

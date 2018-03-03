@@ -19,7 +19,7 @@ extern "C" int cpu_ctc(THFloatTensor *probs,
                         THIntTensor *labels,
                         THIntTensor *label_sizes,
                         THIntTensor *sizes,
-                        int minibatch_size,
+                        int blank_label,
                         THFloatTensor *costs) {
 
     float *probs_ptr = probs->storage->data + probs->storageOffset;
@@ -39,6 +39,7 @@ extern "C" int cpu_ctc(THFloatTensor *probs,
     memset(&options, 0, sizeof(options));
     options.loc = CTC_CPU;
     options.num_threads = 0; // will use default number of threads
+    options.blank_label = blank_label;
 
 #if defined(CTC_DISABLE_OMP) || defined(APPLE)
     // have to use at least one
@@ -47,7 +48,7 @@ extern "C" int cpu_ctc(THFloatTensor *probs,
 
     size_t cpu_size_bytes;
     get_workspace_size(label_sizes_ptr, sizes_ptr,
-                       (int) probs->size[2], minibatch_size,
+                       (int) probs->size[2], (int)probs->size[1],
                        options, &cpu_size_bytes);
 
     float* cpu_workspace = (float*) new unsigned char[cpu_size_bytes];
@@ -55,7 +56,7 @@ extern "C" int cpu_ctc(THFloatTensor *probs,
     compute_ctc_loss(probs_ptr, grads_ptr,
                      labels_ptr, label_sizes_ptr,
                      sizes_ptr, probs->size[2],
-                     minibatch_size, costs_ptr,
+                     probs->size[1], costs_ptr,
                      cpu_workspace, options);
 
     delete cpu_workspace;
@@ -67,8 +68,9 @@ extern "C" int cpu_ctc(THFloatTensor *probs,
                            THIntTensor *labels,
                            THIntTensor *label_sizes,
                            THIntTensor *sizes,
-                           int minibatch_size,
-                           THFloatTensor *costs) {
+                           int blank_label,
+                           THFloatTensor *costs
+                           ) {
 
        float *probs_ptr = probs->storage->data + probs->storageOffset;
        float *grads_ptr;
@@ -77,7 +79,6 @@ extern "C" int cpu_ctc(THFloatTensor *probs,
        } else {
                grads_ptr = NULL; // this will trigger the score forward code path
        }
-
        int *sizes_ptr = sizes->storage->data + sizes->storageOffset;
        int *labels_ptr = labels->storage->data + labels->storageOffset;
        int *label_sizes_ptr = label_sizes->storage->data + label_sizes->storageOffset;
@@ -87,10 +88,11 @@ extern "C" int cpu_ctc(THFloatTensor *probs,
        memset(&options, 0, sizeof(options));
        options.loc = CTC_GPU;
        options.stream = THCState_getCurrentStream(state);
+       options.blank_label = blank_label;
 
        size_t gpu_size_bytes;
        get_workspace_size(label_sizes_ptr, sizes_ptr,
-                          (int) probs->size[2], minibatch_size,
+                          (int) probs->size[2], (int)probs->size[1],
                           options, &gpu_size_bytes);
 
        float* gpu_workspace;
@@ -99,7 +101,7 @@ extern "C" int cpu_ctc(THFloatTensor *probs,
        compute_ctc_loss(probs_ptr, grads_ptr,
                         labels_ptr, label_sizes_ptr,
                         sizes_ptr, probs->size[2],
-                        minibatch_size, costs_ptr,
+                        probs->size[1], costs_ptr,
                         gpu_workspace, options);
 
        THCudaFree(state, (void *) gpu_workspace);
